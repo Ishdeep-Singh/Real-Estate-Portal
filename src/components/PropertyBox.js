@@ -1,9 +1,12 @@
 import { Tooltip } from '@mui/material';
 import firstpic from '../assets/images/properties/1.jpg';
+import { useNavigate } from 'react-router-dom';
 
 const PropertyBox=(props)=>{
+
+  const navigate=useNavigate();
     const viewProperty=(id)=>{
-            alert('Page under development...')
+      navigate('/viewproperty/'+id);
     }
     return   <div class="properties">
     <div class="image-holder"><img src={'http://localhost:3001/uploads/'+props.property.imageUrl} class="img-responsive" alt="properties"/>

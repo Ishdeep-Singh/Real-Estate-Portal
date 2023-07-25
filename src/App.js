@@ -14,6 +14,8 @@ import Login from './Pages/Login';
 import Register from './Pages/Register';
 import MyAccount from './Pages/Myaccount';
 import { userUpdate } from './Store/Appdataslice';
+import SearchProperty from './Pages/SearchProperty';
+import ViewProperty from './Pages/ViewProperty';
 
 function App() {
   const dispatch = useDispatch();

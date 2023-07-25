@@ -270,6 +270,100 @@ app.post("/validateuser", async (req, res) => {
       res.status(500).json({ message: 'Error retrieving home properties' });
     }
   });
+  app.get('/properties', async (req, res) => {
+    try {
+      const { key, type, price, city } = req.query;
+      const filter = {};
+  
+      // Add filters based on the query parameters
+      if (key) {
+        filter.$or = [
+          { title: { $regex: key, $options: 'i' } },
+          { location: { $regex: key, $options: 'i' } },
+          { city: { $regex: key, $options: 'i' } },
+          { amenities: { $regex: key, $options: 'i' } },
+          { description: { $regex: key, $options: 'i' } },
+
+          
+        ];
+      }
+      if (type) {
+        filter.category = type;
+      }
+      if (price) {
+        // Assuming price is a number field in the database
+        const priceRange = price.split('-');
+        if (priceRange.length === 2) {
+          filter.price = { $gte: parseInt(priceRange[0]), $lte: parseInt(priceRange[1]) };
+        }
+      }
+      if (city) {
+        filter.city = { $regex: city, $options: 'i' };
+      }
+  
+      const properties = await db.collection('properties').find(filter).toArray();
+      res.json(properties);
+    } catch (error) {
+      console.error('Error retrieving properties:', error);
+      res.status(500).json({ error: 'Error retrieving properties' });
+    }
+  });
+  app.get('/getproperty/:user_id', async (req, res) => {
+    const user_id = req.params.user_id;
+  
+    try {
+      // Fetch the property with the specified user_id
+      const property = await  db.collection('properties').findOne({ _id: new ObjectId(user_id) });
+  
+      if (!property) {
+        return res.status(404).json({ message: 'Property not found' });
+      }
+  
+      // Fetch the agent details using the user_id from the property
+      const agent = await  db.collection('users').findOne({ _id: new ObjectId(property.user_id) });
+  
+      if (!agent) {
+        return res.status(404).json({ message: 'Agent not found' });
+      }
+  
+      // Combine the property and agent details and return the result
+      const propertyWithAgent = { ...property, agent };
+      res.json(propertyWithAgent);
+    } catch (error) {
+      console.error('Error retrieving property with agent details:', error);
+      res.status(500).json({ error: 'Error retrieving property with agent details' });
+    }
+  });
+  app.post('/submitlead', async (req, res) => {
+    try {
+      const { property_id, full_name, email, phone_number, message } = req.body;
+  
+      // Validate required fields
+      if (!property_id || !full_name || !email || !phone_number || !message) {
+        return res.status(400).json({ error: 'All fields are required' });
+      }
+  
+      // Save the lead data to the MongoDB collection
+      const leadData = {
+        property_id,
+        full_name,
+        email,
+        phone_number,
+        message,
+        timestamp: new Date(),
+      };
+  
+      const result = await db.collection('leads').insertOne(leadData);
+  
+     
+        // Lead data successfully saved
+        return res.status(200).json({ message: 'Lead data saved successfully' });
+    
+    } catch (error) {
+      console.error('Error submitting lead data:', error);
+      return res.status(500).json({ error: 'An error occurred while submitting lead data' });
+    }
+  });
   
 app.put('/users/:id', async (req, res) => {
     const id = req.params.id;
