@@ -15,7 +15,7 @@ app.use('/uploads', express.static('uploads'));
 
 let db;
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const uri = "mongodb+srv://realestate:realestate12345@realestate.8gbpzqw.mongodb.net/?retryWrites=true&w=majority";
+const uri = "mongodb+srv://ishdeepsingh7:Ishdeep%407@real-estate-cluster.ywpj4vx.mongodb.net/?retryWrites=true&w=majority";
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
@@ -24,6 +24,23 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   }
 });
+
+//Redis starts here
+const redis = require("redis");
+
+const redisClient = redis.createClient({ port: 6379, host: "localhost" });
+redisClient.connect();
+redisClient.on("connect", () => {
+  console.log("Redis Connected");
+});
+
+
+redisClient.on("error", (error) => {
+  console.log("Redis Connection error", error);
+});
+
+//Redis ends here
+
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
@@ -56,10 +73,28 @@ const storage = multer.diskStorage({
   
   const upload = multer({ storage });
 
-app.get('/users', async (req, res) => {
-    const users = await db.collection('users').find().toArray();
-    res.json(users);
-});
+// app.get('/users', async (req, res) => {
+//     const users = await db.collection('users').find().toArray();
+//     res.json(users);
+// });
+
+//Redis get user start
+app.get("/users", async (req, res) => {
+  try {
+    let cachedUsers = await redisClient.get("users");
+    if (cachedUsers) {
+      const users = JSON.parse(cachedUsers);
+      console.log("Users from Cache");
+      res.json(users);
+    } else {
+      const users = await db.collection("users").find().toArray();
+      res.json(users);
+      console.log("User from Database");
+      redisClient.set("users", JSON.stringify(users));
+    }
+  } catch (error) {
+    throw new Error
+}});
 
 app.post('/users', async (req, res) => {
     try {
